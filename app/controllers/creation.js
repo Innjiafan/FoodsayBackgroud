@@ -54,21 +54,58 @@ module.exports = {
 		})
 	},
 
-	async list(ctx,next){
-		let accessToken = ctx.query.accessToken
-		await Video.find({},{_id:true,voted:true,author:true,video:true,thumb:true,title:true},function(err,video){
-			// console.log(video.author)
-			// User.findOne({_id:video.author},function(err,user){
-			// 	console.log(user)
-			// 	video.author.nickname = user.nickname
-			// 	video.author.avatar = user.avatar
-			// })
-			ctx.body = {
-				success:true,
-				total:video.length,
-				data:video
-			}
+	 async list(ctx,next){
+		let page = ctx.request.body.page
+		let hastotal = ctx.request.body.total 
+		let count = 0,allpage = 0
+		await Video.count({},function(err,co){
+			count = co
+			//console.log(count)
 		})
+		//console.log(video)
+		//await next()
+		if(page == 0){
+			// await Video.find({},{_id:true,voted:true,author:true,video:true,thumb:true,title:true,meta:true},{skip: Number(hastotal)},function(err,video){
+			// 	//console.log(video)
+				
+			// 	ctx.body={
+			// 		success:true,
+			// 		total:count,
+			// 		data:video
+			// 	}
+			// })
+		}else{
+		await Video.find({},{_id:true,voted:true,author:true,video:true,thumb:true,title:true,meta:true},{skip:((page-1)*5),limit:5},async function(err,video){
+				if(err){
+						throw err
+					}
+				
+				if(count/5 == 0){
+					allpage = count/5
+				}else{
+					allpage = count/5+1
+				}
+				if(page>allpage){
+					return
+				}
+				let opt = [
+					{path:'author',select:'avatar nickname'}
+				]
+
+				await Video.populate(video,opt,function(err,v){
+					//console.log(video)
+					video = v
+				})
+
+				ctx.body={
+					success:true,
+					total:count,
+					data:video
+				}
+				
+			})
+		}
+
 	},
 
 	async vote(ctx,next){
@@ -83,5 +120,18 @@ module.exports = {
 			}
 		})
 		
-	}
+	},
+
+	async userDetail(ctx,next){
+		let body = ctx.request.body
+		let _id = body._id
+		await User.findOne({_id:_id},function(err,user){
+			console.log(user)
+			ctx.body = {
+				success:true,
+				data:user
+			}
+		})
+		
+	},
 }
