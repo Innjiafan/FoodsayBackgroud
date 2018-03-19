@@ -10,7 +10,7 @@ let User = mongoose.model('User')
 let Comment = mongoose.model('Comment')
 
 module.exports = {
-	 async comments(ctx,next){
+	 async addcomments(ctx,next){
 	 	let body = ctx.request.body
 		let accessToken = body.accessToken
 		let videoId = body.list
@@ -25,8 +25,13 @@ module.exports = {
 			return
 		}
 		let userid
-		await User.findOne({accessToken:accessToken}, function(err,user){
+		await User.findOne({accessToken:accessToken},function(err,user){
 			userid = user._id
+			console.log(user)
+			ctx.body = {
+				success:true,
+				data:user
+			}
 		})
 
 		let comment = new Comment({
@@ -36,14 +41,38 @@ module.exports = {
 		})
 
 		await comment.save(function(err,comment){
-			console.log(comment)
+			//console.log(comment)
 			if(err) console.log(err)
-			comment = comment
 		})
-		ctx.body = {
-			success:true,
-			data:comment
-		}
-	}
+	},
+	 async commentslist(ctx,next){
+		let videoId = ctx.query.videoId 
+		let page = parseInt(ctx.query.page,10)||1
+	  var count = 3
+	  var offset = (page - 1) * count
 
+	  var queryArray = [
+	    await Comment
+	      .find({videoBy:videoId})
+	      .sort({
+	        'meta.createAt': -1
+	      })
+	      .skip(offset)
+	      .limit(count)
+	      .populate({
+			  path: 'replyBy',
+			  select: 'avatar nickname',
+			})
+	      .exec(),
+	    await Comment.count({videoBy:videoId}).exec()
+	  ]
+
+	  var data = queryArray
+//	  console.log(data)
+	  ctx.body = {
+	    success: true,
+	    data: data[0],
+	    total: data[1]
+	  }
+	}
 }

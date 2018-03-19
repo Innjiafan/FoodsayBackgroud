@@ -35,6 +35,7 @@ const Koa = require('koa');
 const logger = require('koa-logger');
 const session = require('koa-session');
 const bodyParser = require('koa-bodyparser');
+const json = require('koa-json');
 
 let router = require('./config/routes.js')()
 
@@ -47,9 +48,10 @@ app.keys=['foodsay']
 app.use(logger())
 app.use(session(app))
 app.use(bodyParser())
-
+app.use(json())
 app
   .use(router.routes())
-  .use(router.allowedMethods());
+  .use(router.allowedMethods())
+
 app.listen(1234)
 console.log('listening:1234')

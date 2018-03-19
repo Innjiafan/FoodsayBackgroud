@@ -7,7 +7,10 @@ const xss = require('xss')
 
 let Video = mongoose.model('Video')
 let User = mongoose.model('User')
-
+var userFields = [
+  'avatar',
+  'nickname'
+]
 module.exports = {
 	async video(ctx,next){
 		let body = ctx.request.body
@@ -28,13 +31,12 @@ module.exports = {
 			qiniu_key: videoData.key
 		},(err,video)=>{
 			if(!video){
-				//console.log(111)
 				video = new Video({
 					author:user._id,
 					qiniu_key:videoData.key,
 					persistentId:videoData.persistentId,
-					video:'http://p3pxaqk2z.bkt.clouddn.com/'+videoData.key,
-				    thumb:'http://p3pxaqk2z.bkt.clouddn.com/'+videoData.key+'?vframe/jpg/offset/0/w/460/h/320',
+					video:"http://p3pxaqk2z.bkt.clouddn.com/"+videoData.key,
+				    thumb:"http://p3pxaqk2z.bkt.clouddn.com/"+videoData.key+"?vframe/jpg/offset/0/w/460/h/320",
 				    title:title,
 				    voted:false
 				})
@@ -55,56 +57,34 @@ module.exports = {
 	},
 
 	 async list(ctx,next){
-		let page = ctx.request.body.page
-		let hastotal = ctx.request.body.total 
-		let count = 0,allpage = 0
-		await Video.count({},function(err,co){
-			count = co
-			//console.log(count)
-		})
-		//console.log(video)
-		//await next()
-		if(page == 0){
-			// await Video.find({},{_id:true,voted:true,author:true,video:true,thumb:true,title:true,meta:true},{skip: Number(hastotal)},function(err,video){
-			// 	//console.log(video)
-				
-			// 	ctx.body={
-			// 		success:true,
-			// 		total:count,
-			// 		data:video
-			// 	}
-			// })
-		}else{
-		await Video.find({},{_id:true,voted:true,author:true,video:true,thumb:true,title:true,meta:true},{skip:((page-1)*5),limit:5},async function(err,video){
-				if(err){
-						throw err
-					}
-				
-				if(count/5 == 0){
-					allpage = count/5
-				}else{
-					allpage = count/5+1
-				}
-				if(page>allpage){
-					return
-				}
-				let opt = [
-					{path:'author',select:'avatar nickname'}
-				]
+	  let page = parseInt(ctx.request.body.page,10)||1
+	  var count = 3
+	  var offset = (page - 1) * count
 
-				await Video.populate(video,opt,function(err,v){
-					//console.log(video)
-					video = v
-				})
-
-				ctx.body={
-					success:true,
-					total:count,
-					data:video
-				}
-				
+	  var queryArray = [
+	    await Video
+	      .find({})
+	      .sort({
+	        'meta.createAt': -1
+	      })
+	      .skip(offset)
+	      .limit(count)
+	      .populate({
+			  path: 'author',
+			  select: 'avatar nickname',
 			})
-		}
+	      .exec(),
+	    await Video.count({}).exec()
+	  ]
+
+	  var data = queryArray
+	  //console.log(data)
+	  ctx.body = {
+	    success: true,
+	    data: data[0],
+	    total: data[1]
+	  }
+	
 
 	},
 

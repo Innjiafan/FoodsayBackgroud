@@ -11,10 +11,7 @@ let CommentSchema = new Schema({
     },
     //评论内容
     content:String,
-    videoBy:{
-      type:ObjectId,
-      ref:'Video'
-    },
+    videoBy:String,
     meta:{
       createAt:{
         type:Date,

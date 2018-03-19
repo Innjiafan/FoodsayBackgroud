@@ -20,8 +20,9 @@ module.exports = function(){
 	router.post('creations/list',Creation.list)
 	router.post('creations/vote',Creation.vote)
 
-	router.post('detail/comments',Detail.comments)
-
+	//评论
+	router.post('detail/comments',Detail.addcomments)
+	router.get('detail/commentslist',Detail.commentslist)
 
 	return router
 }
