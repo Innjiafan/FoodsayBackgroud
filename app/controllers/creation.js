@@ -12,6 +12,7 @@ var userFields = [
   'nickname'
 ]
 module.exports = {
+	//上传视频
 	async video(ctx,next){
 		let body = ctx.request.body
 		let videoData = body.video
@@ -55,20 +56,69 @@ module.exports = {
 			
 		})
 	},
-
+	//视频列表
 	 async list(ctx,next){
-	  let page = parseInt(ctx.request.body.page,10)||1
+	  let page = parseInt(ctx.query.page,10)
+	  let len = ctx.query.len
+	  var count = 3
+	  var queryArray =  []
+	  console.log(len)
+	  if(page==0){
+	  	queryArray =  [
+		    await Video
+		      .find({})
+		      .sort({
+		        'meta.createAt': -1
+		      })
+		      .skip(Number(len))
+		      .limit(count)
+		      .populate({
+				  path: 'author',
+				  select: 'avatar nickname',
+				})
+		      .exec(),
+		    await Video.count({}).exec()
+		  ]
+	  }else{
+	  	  var offset = (page - 1) * count
+		  queryArray = [
+		    await Video
+		      .find({})
+		      .sort({
+		        'meta.createAt': -1
+		      })
+		      .skip(offset)
+		      .limit(count)
+		      .populate({
+				  path: 'author',
+				  select: 'avatar nickname',
+				})
+		      .exec(),
+		    await Video.count({}).exec()
+		  ]
+	  }
+	  var data = queryArray
+		  //console.log(data)
+	  ctx.body = {
+	    success: true,
+	    data: data[0],
+	    total: data[1]
+	  }
+
+	},
+	//条件查询视频
+	 async searchVideo(ctx,next){
+	  let page = parseInt(ctx.query.page,10)||1
+	  let searchtext = ctx.query.searchtext
 	  var count = 3
 	  var offset = (page - 1) * count
 
 	  var queryArray = [
 	    await Video
-	      .find({})
+	      .find({title:new RegExp(searchtext)})
 	      .sort({
 	        'meta.createAt': -1
 	      })
-	      .skip(offset)
-	      .limit(count)
 	      .populate({
 			  path: 'author',
 			  select: 'avatar nickname',
@@ -84,10 +134,8 @@ module.exports = {
 	    data: data[0],
 	    total: data[1]
 	  }
-	
-
 	},
-
+	//点赞
 	async vote(ctx,next){
 		let body = ctx.request.body
 		let id = body.id
